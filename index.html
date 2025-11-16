@@ -1,319 +1,138 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kisah Sukses — Ultra Feature Pack</title>
-  <meta name="description" content="Kisah Sukses — Mentor AI bilingual dengan fitur sosial, quotes, game." />
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0b67ff">
-  <link rel="icon" href="/favicon-32.png">
-  <link href="style.css" rel="stylesheet">
+<meta charset="UTF-8">
+<title>Kisah Sukses Pro</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f3f3f3;
+    }
+    .container {
+        display: flex;
+        height: 100vh;
+        gap: 10px;
+        padding: 10px;
+    }
+    .ai-box {
+        width: 30%;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        overflow-y: auto;
+        box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    .right-box {
+        width: 70%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .section {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    iframe {
+        width: 100%;
+        height: 300px;
+        border-radius: 10px;
+        border: none;
+    }
+    .social {
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+    }
+
+    .game-frame {
+        width: 100%;
+        height: 350px;
+        border: none;
+        border-radius: 10px;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        background: #0080ff;
+        color: white;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+    }
+</style>
 </head>
+
 <body>
-  <main class="page">
-    <header class="hero">
-      <div class="brand">
-        <img src="/logo.png" alt="logo" class="logo"/>
-        <div>
-          <h1>Kisah Sukses — AI Mentor</h1>
-          <p class="muted">Inspirasi harian, sekarang dengan share & game</p>
-        </div>
-      </div>
-      <div class="status">
-        <div>AI aktif: <span id="aiIndicator">Detecting...</span></div>
-        <div>Model: <span id="modelName">--</span></div>
-      </div>
-    </header>
 
-    <section class="content">
-      <section class="left">
-        <div class="card chat-card">
-          <div class="messages" id="messages" aria-live="polite"></div>
+<div class="container">
 
-          <form id="chatForm" class="chat-form" onsubmit="return false;">
-            <input id="prompt" placeholder="Tanyakan sesuatu..." />
-            <button id="sendBtn">Kirim</button>
-          </form>
-        </div>
-
-        <div class="card quotes-card" id="quotesCard">
-          <h3>Quote Inspiratif</h3>
-          <div id="quoteText">--</div>
-          <div style="margin-top:8px;">
-            <button id="newQuoteBtn">Ambil Quote Baru</button>
-            <button id="tweetQuote">Share</button>
-          </div>
-        </div>
-
-        <div class="card game-card">
-          <h3>Mini Game — Koleksi Angka</h3>
-          <div>Waktu: <span id="timeLeft">15</span>s | Skor: <span id="score">0</span></div>
-          <button id="collectBtn">KLIK!</button>
-          <div id="gameMsg"></div>
-        </div>
-      </section>
-
-      <aside class="right">
-        <div class="card social-card">
-          <h3>Bagikan</h3>
-          <input id="shareText" placeholder="Tulis pesan..." />
-          <input id="shareUrl" placeholder="Link (opsional)" />
-          <div class="row">
-            <button onclick="shareTo('facebook')">Facebook</button>
-            <button onclick="shareTo('twitter')">Twitter</button>
-            <button onclick="shareTo('instagram')">Instagram</button>
-            <button onclick="shareTo('tiktok')">TikTok</button>
-          </div>
-          <p id="shareResult"></p>
-        </div>
-
-        <div class="card settings-card">
-          <h3>Pengaturan</h3>
-          <label for="modelSelect">Pilih model (env override tetap berlaku):</label>
-          <select id="modelSelect">
-            <option value="">(Default)</option>
-            <option value="llama3-70b-8192">Groq: llama3-70b-8192</option>
-            <option value="llama3-8b-8192">Groq: llama3-8b-8192</option>
-            <option value="gpt-4o-mini">OpenAI: gpt-4o-mini</option>
-          </select>
-          <div style="margin-top:8px;">
-            <button id="applyModel">Terapkan (client-side)</button>
-            <button id="testAI">Tes AI</button>
-          </div>
-          <div id="testResult" style="margin-top:8px;"></div>
-        </div>
-      </aside>
-    </section>
-
-    <footer class="footer">
-      <small>Deploy dengan Groq API — pastikan GROQ_API_KEY di env. Versi Ultra Feature Pack v1</small>
-    </footer>
-  </main>
-
-  <script src="/ai.js"></script>
-  <script>
-    // UI glue
-    document.getElementById('modelName').textContent = (localStorage.getItem('MODEL') || 'auto (env)').toString();
-    const aiIndicator = document.getElementById('aiIndicator');
-    function setAIIndicator(text){ aiIndicator.textContent = text; }
-
-    // Chat
-    const messages = document.getElementById('messages');
-    function appendMsg(txt, cls='ai'){
-      const el = document.createElement('div');
-      el.className = 'msg ' + (cls==='user' ? 'user' : 'ai');
-      el.textContent = txt;
-      messages.appendChild(el);
-      messages.scrollTop = messages.scrollHeight;
-    }
-
-    document.getElementById('sendBtn').addEventListener('click', async ()=>{
-      const input = document.getElementById('prompt');
-      const prompt = input.value.trim();
-      if(!prompt) return;
-      appendMsg(prompt,'user');
-      appendMsg('Menjawab...', 'ai');
-      input.value = '';
-      try{
-        const model = localStorage.getItem('MODEL') || '';
-        const res = await fetch('/api/ai', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt: prompt, model }) });
-        const data = await res.json();
-        // replace last ai msg
-        const aiBubbles = messages.querySelectorAll('.msg.ai');
-        if(aiBubbles.length) aiBubbles[aiBubbles.length-1].textContent = data.reply || 'Tidak ada jawaban';
-      }catch(e){
-        const aiBubbles = messages.querySelectorAll('.msg.ai');
-        if(aiBubbles.length) aiBubbles[aiBubbles.length-1].textContent = 'Error connecting to AI';
-      }
-    });
-
-    // Quotes
-    async function loadQuote(){
-      try{
-        const res = await fetch('/api/quote');
-        const d = await res.json();
-        document.getElementById('quoteText').textContent = d.quote;
-      }catch(e){
-        document.getElementById('quoteText').textContent = 'Tidak dapat mengambil quote';
-      }
-    }
-    document.getElementById('newQuoteBtn').addEventListener('click', loadQuote);
-    document.getElementById('tweetQuote').addEventListener('click', ()=>{
-      const text = document.getElementById('quoteText').textContent;
-      window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text),'_blank');
-    });
-    loadQuote();
-
-    // Social share
-    async function shareTo(platform){
-      const text = document.getElementById('shareText').value;
-      const url = document.getElementById('shareUrl').value;
-      const res = await fetch('/api/social',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({platform,text,url})});
-      const d = await res.json();
-      document.getElementById('shareResult').textContent = d.shareUrl || 'No share url';
-      if(d.shareUrl) window.open(d.shareUrl,'_blank');
-    }
-
-    // Game
-    (function(){
-      const btn = document.getElementById('collectBtn');
-      const scoreEl = document.getElementById('score');
-      const timeEl = document.getElementById('timeLeft');
-      const msg = document.getElementById('gameMsg');
-      let score=0, timeLeft=15, running=false, timerId=null;
-      function endGame(){ running=false; btn.disabled=true; clearInterval(timerId); msg.textContent='Selesai! Skor: '+score; }
-      btn.addEventListener('click', ()=>{
-        if(!running){
-          running=true; score=0; timeLeft=15; btn.disabled=false; scoreEl.textContent=0; timeEl.textContent=15; msg.textContent='';
-          timerId = setInterval(()=>{ timeLeft--; timeEl.textContent=timeLeft; if(timeLeft<=0) endGame(); },1000);
-        }
-        if(running){ score++; scoreEl.textContent = score; }
-      });
-    })();
-
-    // Settings: model select
-    document.getElementById('applyModel').addEventListener('click', ()=>{
-      const sel = document.getElementById('modelSelect').value;
-      if(sel) localStorage.setItem('MODEL', sel); else localStorage.removeItem('MODEL');
-      document.getElementById('modelName').textContent = (sel || 'auto (env)');
-      alert('Model disimpan di browser. Server akan tetap gunakan env var jika ada.');
-    });
-
-    // Test AI
-    document.getElementById('testAI').addEventListener('click', async ()=>{
-      setAIIndicator('Testing...');
-      try{
-        const res = await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({ prompt: 'Tes koneksi AI, tolong jawab singkat: Halo' })});
-        const d = await res.json();
-        document.getElementById('testResult').textContent = d.reply || 'No reply';
-        setAIIndicator('OK');
-      }catch(e){
-        document.getElementById('testResult').textContent = 'Error: '+e.message;
-        setAIIndicator('Error');
-      }
-    });
-
-    // On load, detect AI env (ping /api/ai with a lightweight test)
-    (async function(){
-      try{
-        const res = await fetch('/api/ai', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt: 'Ping' })});
-        const d = await res.json();
-        setAIIndicator('Connected');
-      }catch(e){
-        setAIIndicator('Not connected');
-      }
-    })();
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').then(()=>console.log('SW registered'));
-    }
-  </script>
-<!-- ADDED: Model selector, AI history, YouTube, Games, Quotes, Social -->
-<div id="ultraFeatures" style="padding:12px;border-top:1px solid #eee;margin-top:12px;">
-  <h2>Ultra Features</h2>
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-    <label for="modelSelect">Pilih Model:</label>
-    <select id="modelSelect">
-      <option value="">Auto (env)</option>
-      <option value="gemma2-9b-it">GROQ gemma2-9b-it</option>
-      <option value="llama-3.1-8b">Groq llama-3.1-8b</option>
-      <option value="gpt-4o-mini">OpenAI gpt-4o-mini</option>
-    </select>
-    <button id="applyModelBtn">Set Model</button>
-    <button id="clearHistoryBtn">Clear Chat History</button>
-  </div>
-
-  <div id="chatHistory" style="margin-bottom:12px;">
-    <h4>Chat History</h4>
-    <div id="historyList" style="max-height:120px;overflow:auto;border:1px solid #ddd;padding:8px;background:#fff;"></div>
-  </div>
-
-  <div id="youtubePanel" style="margin-bottom:12px;">
-    <h4>Featured YouTube</h4>
-    <iframe id="ytFrame" width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video" frameborder="0" allowfullscreen></iframe>
-  </div>
-
-  <div id="gamesPanel" style="margin-bottom:12px;">
-    <h4>Game Center</h4>
-    <button onclick="startGame('clicker')">Clicker</button>
-    <button onclick="startGame('snake')">Snake</button>
-    <div id="gameArea" style="margin-top:8px;"></div>
-  </div>
-
-  <div id="quotesPanel2" style="margin-bottom:12px;">
-    <h4>Quote</h4>
-    <div id="quoteText2">-</div>
-    <button id="newQuoteBtn2">Ambil Quote</button>
-  </div>
-
-  <div id="socialPanel2">
-    <h4>Share</h4>
-    <input id="shareText2" placeholder="Tulis pesan..." style="width:60%"/>
-    <input id="shareUrl2" placeholder="Link (opsional)" style="width:35%"/>
-    <div style="margin-top:8px;">
-      <button onclick="share('facebook', 'shareText2','shareUrl2')">Share to FB</button>
-      <button onclick="share('twitter','shareText2','shareUrl2')">Share to Twitter</button>
-      <button onclick="share('instagram','shareText2','shareUrl2')">IG</button>
-      <button onclick="share('tiktok','shareText2','shareUrl2')">TikTok</button>
+    <!-- LEFT AI -->
+    <div class="ai-box">
+        <h2>Asisten AI</h2>
+        <textarea id="prompt" style="width:100%;height:120px;"></textarea>
+        <button onclick="sendAI()">Kirim ke AI</button>
+        <div id="aiReply" style="margin-top:15px;white-space:pre-line"></div>
     </div>
-  </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="right-box">
+
+        <!-- QUOTES -->
+        <div class="section">
+            <h3>Quote Hari Ini</h3>
+            <div id="quote">Memuat...</div>
+            <button onclick="loadQuote()">Ambil Quote Baru</button>
+        </div>
+
+        <!-- YOUTUBE -->
+        <div class="section">
+            <h3>Video YouTube</h3>
+            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
+        </div>
+
+        <!-- GAME -->
+        <div class="section">
+            <h3>Game</h3>
+            <iframe class="game-frame" src="https://html5.gamemonetize.com/dc4o0pybqdx4jwy97d3n7hbcxetm67pj/"></iframe>
+        </div>
+
+        <!-- SOCIAL -->
+        <div class="section social">
+            <button onclick="window.open('https://www.tiktok.com','_blank')">TikTok</button>
+            <button onclick="window.open('https://instagram.com','_blank')">Instagram</button>
+            <button onclick="window.open('https://facebook.com','_blank')">Facebook</button>
+        </div>
+
+    </div>
+
 </div>
 
 <script>
-document.getElementById('applyModelBtn').addEventListener('click', ()=>{
-  const val = document.getElementById('modelSelect').value;
-  if(val) localStorage.setItem('MODEL', val); else localStorage.removeItem('MODEL');
-  alert('Model disimpan di browser. Server env tetap prioritas.');
-});
+async function sendAI() {
+    const prompt = document.getElementById("prompt").value;
 
-document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{
-  localStorage.removeItem('chat_history'); document.getElementById('historyList').innerHTML=''; alert('History dibersihkan');
-});
+    const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+    });
 
-function renderHistory(){
-  const h = JSON.parse(localStorage.getItem('chat_history')||'[]');
-  const el = document.getElementById('historyList'); el.innerHTML='';
-  h.slice().reverse().forEach(it=>{
-    const d = document.createElement('div'); d.style.padding='6px'; d.style.borderBottom='1px solid #f0f0f0';
-    d.innerHTML = '<strong>'+ (it.role||'') +':</strong> '+ (it.text||'');
-    el.appendChild(d);
-  });
-}
-renderHistory();
-
-// Quote
-document.getElementById('newQuoteBtn2').addEventListener('click', async ()=>{
-  try{ const r=await fetch('/api/quote'); const d=await r.json(); document.getElementById('quoteText2').textContent = d.quote; }catch(e){ document.getElementById('quoteText2').textContent='Error'; }
-});
-
-// Social share helper
-async function share(platform, textId, urlId){
-  const text = document.getElementById(textId).value; const url = document.getElementById(urlId).value;
-  const res = await fetch('/api/social',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform,text,url})});
-  const d = await res.json();
-  if(d.shareUrl) window.open(d.shareUrl,'_blank');
+    const data = await res.json();
+    document.getElementById("aiReply").innerText = data.reply;
 }
 
-// Simple games
-function startGame(name){
-  const area = document.getElementById('gameArea');
-  area.innerHTML = '';
-  if(name==='clicker'){ const btn=document.createElement('button'); let s=0; btn.textContent='KLIK!'; btn.onclick=()=>{ s++; if(!area.querySelector('#score')) area.insertAdjacentHTML('beforeend','<div>Skor: <span id="score">0</span></div>'); area.querySelector('#score').textContent=s }; area.appendChild(btn); }
-  if(name==='snake'){ area.innerHTML='<canvas id="snakeCanvas" width="300" height="200"></canvas>'; /* basic snake implemented in game script */ initSnake(); }
+async function loadQuote() {
+    const r = await fetch("/api/quote");
+    const d = await r.json();
+    document.getElementById("quote").innerText = d.quote;
 }
 
-// Basic snake implementation (minimal, reliable)
-function initSnake(){
-  const c = document.getElementById('snakeCanvas'); if(!c) return;
-  const ctx = c.getContext('2d'); const size=10; let w=c.width, h=c.height;
-  let snake=[{x:20,y:20}]; let dir={x:1,y:0}; let food={x:50,y:50}; let running=true;
-  function loop(){ if(!running) return; const head={x:snake[0].x+dir.x*size, y:snake[0].y+dir.y*size}; snake.unshift(head); if(head.x===food.x && head.y===food.y){ food={x:Math.floor(Math.random()*(w/size))*size, y:Math.floor(Math.random()*(h/size))*size} } else snake.pop(); ctx.fillStyle='#001'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#0f0'; snake.forEach(s=>ctx.fillRect(s.x,s.y,size-1,size-1)); ctx.fillStyle='#f00'; ctx.fillRect(food.x,food.y,size-1,size-1); }
-  setInterval(loop,120);
-  window.addEventListener('keydown', (e)=>{ if(e.key==='ArrowUp') dir={x:0,y:-1}; if(e.key==='ArrowDown') dir={x:0,y:1}; if(e.key==='ArrowLeft') dir={x:-1,y:0}; if(e.key==='ArrowRight') dir={x:1,y:0}; });
-}
+loadQuote();
 </script>
 
 </body>
