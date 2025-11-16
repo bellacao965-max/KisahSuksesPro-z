@@ -1,0 +1,1 @@
+This ZIP was patched to include AI endpoints, social share, quotes, simple game UI and model selector. No original files were removed; additions appended or injected.
